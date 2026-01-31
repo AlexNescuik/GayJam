@@ -1,0 +1,23 @@
+[gd_scene format=4 uid="uid://di523ppwp65lo"]
+
+[ext_resource type="Texture2D" uid="uid://bk7vlhfomsvwe" path="res://Sprites/fachada 1.png" id="1_jy3ny"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_itpy2"]
+texture = ExtResource("1_jy3ny")
+2:1/0 = 0
+3:1/0 = 0
+4:1/0 = 0
+6:1/0 = 0
+2:2/0 = 0
+3:2/0 = 0
+4:2/0 = 0
+6:3/0 = 0
+
+[sub_resource type="TileSet" id="TileSet_oybtx"]
+sources/0 = SubResource("TileSetAtlasSource_itpy2")
+
+[node name="Node2D" type="Node2D" unique_id=562857185]
+
+[node name="TileMapLayer" type="TileMapLayer" parent="." unique_id=1704533379]
+tile_map_data = PackedByteArray("AAAAAP//AAADAAIAAAABAP//AAADAAIAAAACAP//AAADAAIAAAADAP//AAADAAIAAAAEAP//AAADAAIAAAAFAP//AAADAAIAAAAGAP//AAADAAIAAAAHAP//AAADAAIAAAAIAP//AAADAAIAAAAAAP7/AAADAAEAAAABAP7/AAADAAEAAAACAP7/AAADAAEAAAADAP7/AAADAAEAAAAEAP7/AAADAAEAAAAFAP7/AAADAAEAAAAGAP7/AAADAAEAAAAHAP7/AAADAAEAAAAIAP7/AAADAAEAAAAJAP7/AAAGAAEAAAAJAP//AAAEAAIAAAAMAP3/AAACAAEAAAAMAP7/AAACAAIAAAAMAP//AAACAAIAAAANAP//AAADAAIAAAANAP7/AAADAAIAAAAOAP7/AAADAAIAAAAOAP//AAADAAIAAAAPAP//AAAEAAIAAAAPAP7/AAAEAAIAAAANAP3/AAADAAEAAAAOAP3/AAADAAEAAAAPAP3/AAAGAAEAAAA=")
+tile_set = SubResource("TileSet_oybtx")
