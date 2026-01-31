@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dlp7ihxnkikgi"
-path="res://.godot/imported/fachada 1.png-69bb233d17826f0a2759ef488687d5f2.ctex"
+uid="uid://1qmgjcbr2tgw"
+path="res://.godot/imported/viga.png-205dd6668c0f02a9bce27cfc64e70aa8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Sprites/fachada 1.png"
-dest_files=["res://.godot/imported/fachada 1.png-69bb233d17826f0a2759ef488687d5f2.ctex"]
+source_file="res://Sprites/viga.png"
+dest_files=["res://.godot/imported/viga.png-205dd6668c0f02a9bce27cfc64e70aa8.ctex"]
 
 [params]
 
