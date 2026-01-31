@@ -1,200 +1,254 @@
 extends CharacterBody2D
 
-# --- CONFIGURACIÓN DE MOVIMIENTO ---
-const VELOCIDAD_NORMAL = 100.0
-const VELOCIDAD_CORRER = 170.0
-const VELOCIDAD_BARRIDO = 200.0
-const VELOCIDAD_TACLEADO = 40.0  # ¡Nuevo! Impulso fuerte
-const FUERZA_SALTO = -300.0
-const GRAVEDAD = 980.0
+# #########################################################
+# 1. ESTADOS Y CONFIGURACIÓN
+# #########################################################
+enum Estado { IDLE, MOVIENDO, SALTANDO, CAYENDO, ATACANDO, TACLEANDO, BARRIDO, PARED, CAIDA_BOMBA, DIVE }
 
-# --- CONFIGURACIÓN DE PARED ---
-const VELOCIDAD_DESLIZAMIENTO = 50.0  
-const FUERZA_REBOTE_X = 300.0         
-const TIEMPO_BLOQUEO_WALLJUMP = 0.3
-var tiempo_bloqueo_pared = 0.0       
-var bloqueo_por_pared = false        
+# --- Movimiento Base ---
+const VEL_NORMAL        = 100.0
+const VEL_CORRER        = 170.0
+const VEL_SUPER_CORRER  = 260.0
+const VEL_BARRIDO       = 250.0
+const VEL_TACLEADO      = 380.0
+const VEL_CAIDA_BOMBA   = 600.0
 
-# --- CONFIGURACIÓN DEL BARRIDO ---
-const TIEMPO_MAX_BARRIDO = 0.9   
-var tiempo_barrido_actual = 0.0  
-var bloqueo_barrido = false      
+# --- Salto y Gravedad ---
+const FUERZA_SALTO           = -300.0
+const FUERZA_SALTO_SUPER     = -380.0
+const GRAVEDAD               = 980.0
+const MULT_CORTE_SALTO       = 0.5
+const VENTANA_SALTO_POTENTE  = 0.2
 
-# --- CONFIGURACIÓN DE COMBATE ---
-var esta_atacando = false
-var esta_tacleando = false # ¡Nuevo Estado!
+# --- Mecánicas de Pared ---
+const VEL_DESLIZAMIENTO = 50.0
+const REBOTE_PARED_X    = 300.0
 
-# --- CONFIGURACIÓN DEL SALTO ---
-const CORTE_SALTO = 0.5 
+# --- Dive (Impulsos) ---
+const DIVE_JUMP_X = 120.0
+const DIVE_JUMP_Y = -180.0
+const DIVE_LONG_X = 250.0
+const DIVE_LONG_Y = -150.0
+
+# --- Timers y Duraciones ---
+const TIEMPO_SPRINT_MAX      = 1.2
+const DURACION_BARRIDO       = 0.5
+const PAUSA_ANTICIPACION     = 0.5
+
+# #########################################################
+# 2. VARIABLES DE CONTROL
+# #########################################################
+var estado_actual      : Estado = Estado.IDLE
+var timer_sprint       : float  = 0.0
+var timer_barrido      : float  = 0.0
+var timer_super_salto  : float  = 0.0
+var timer_bomba        : float  = 0.0
+
+var ultima_dir_sprint  : float  = 0.0
+var es_salto_potenciado: bool   = false
+var es_long_dive       : bool   = false
+var puedo_hacer_dive   : bool   = true
 
 @onready var animaciones = $AnimatedSprite2D
 
-func _physics_process(delta):
-	# 1. GRAVEDAD
-	if not is_on_floor():
-		velocity.y += GRAVEDAD * delta
-
-	# INPUTS
-	var direccion = Input.get_axis("ui_left", "ui_right")
+# #########################################################
+# 3. BUCLE PRINCIPAL
+# #########################################################
+func _physics_process(delta: float) -> void:
+	procesar_gravedad(delta)
+	actualizar_timers(delta)
 	
-	# --- LÓGICA DE COMBATE (ATAQUE Y TACLEADO) ---
-	if Input.is_action_just_pressed("Ataque"):
-		# Verificamos que no estemos ocupados haciendo otra cosa
-		if not esta_atacando and not esta_tacleando and not bloqueo_barrido and not bloqueo_por_pared:
-			
-			# DECISIÓN: ¿Es Tacleado o Ataque Normal?
-			if Input.is_action_pressed("Correr"):
-				realizar_tacleado() # Shift + C
-			else:
-				realizar_ataque()   # Solo C
+	# Input
+	var raw_dir = Input.get_axis("ui_left", "ui_right")
+	var dir     = raw_dir if abs(raw_dir) > 0.15 else 0.0
+	var corre   = (dir != 0) and Input.is_action_pressed("Correr")
 	
-	
-	# --- LÓGICA DE PARED ---
-	var esta_en_pared = is_on_wall() and not is_on_floor()
-	
-	# No permitimos wall jump si estamos en medio de un tacleado (opcional, por estabilidad)
-	if esta_en_pared and not bloqueo_por_pared and not esta_atacando and not esta_tacleando:
-		# A) WALL SLIDE
-		if velocity.y > 0:
-			velocity.y = min(velocity.y, VELOCIDAD_DESLIZAMIENTO)
-			var normal_pared = get_wall_normal()
-			if normal_pared.x != 0:
-				animaciones.flip_h = (normal_pared.x > 0)
+	if is_on_floor(): puedo_hacer_dive = true
 
-		# B) WALL JUMP
-		if Input.is_action_just_pressed("ui_accept"):
-			var normal = get_wall_normal()
-			velocity.y = FUERZA_SALTO
-			velocity.x = normal.x * FUERZA_REBOTE_X
-			bloqueo_por_pared = true
-			tiempo_bloqueo_pared = 0.0
-			animaciones.flip_h = (velocity.x < 0)
-	
-	
-	# --- GESTIÓN DE PRIORIDADES DE MOVIMIENTO ---
-	var esta_barriendose = false
-	var intentando_barrer = is_on_floor() and Input.is_action_pressed("Correr") and Input.is_action_pressed("ui_down") and direccion != 0
-
-	# CASO 1: BLOQUEO POR PARED
-	if bloqueo_por_pared:
-		tiempo_bloqueo_pared += delta
-		if tiempo_bloqueo_pared >= TIEMPO_BLOQUEO_WALLJUMP:
-			bloqueo_por_pared = false
-		if is_on_floor(): 
-			bloqueo_por_pared = false
-
-	# CASO 2: TACLEADO (Prioridad Alta)
-	elif esta_tacleando:
-		# Durante el tacleado, el jugador se mueve automáticamente hacia donde mira
-		# No leemos "direccion" para que no pueda frenar
-		var dir_tacleado = -1 if animaciones.flip_h else 1
-		velocity.x = dir_tacleado * VELOCIDAD_TACLEADO
-		
-		# Nota: Si choca con pared, se detendrá por física, pero el estado sigue hasta acabar animacion
-
-	# CASO 3: BARRIDO
-	elif intentando_barrer and not bloqueo_barrido and not esta_atacando:
-		bloqueo_barrido = false 
-		esta_barriendose = true
-		velocity.x = direccion * VELOCIDAD_BARRIDO
-		tiempo_barrido_actual += delta
-		if tiempo_barrido_actual >= TIEMPO_MAX_BARRIDO:
-			bloqueo_barrido = true
-			esta_barriendose = false
-	
-	# CASO 4: MOVIMIENTO NORMAL
-	else:
-		if not intentando_barrer:
-			bloqueo_barrido = false
-			tiempo_barrido_actual = 0.0
-
-		if Input.is_action_just_pressed("ui_accept") and is_on_floor() and not esta_atacando:
-			velocity.y = FUERZA_SALTO
-		if Input.is_action_just_released("ui_accept") and velocity.y < 0:
-			velocity.y *= CORTE_SALTO
-
-		var velocidad_actual = VELOCIDAD_NORMAL
-		if Input.is_action_pressed("Correr"):
-			velocidad_actual = VELOCIDAD_CORRER
-
-		if direccion:
-			velocity.x = direccion * velocidad_actual
-		else:
-			velocity.x = move_toward(velocity.x, 0, velocidad_actual)
+	# Máquina de Estados
+	match estado_actual:
+		Estado.IDLE:         logica_idle(dir)
+		Estado.MOVIENDO:     logica_movimiento(dir, corre, delta)
+		Estado.SALTANDO, \
+		Estado.CAYENDO:      logica_aire(dir)
+		Estado.ATACANDO:     logica_ataque()
+		Estado.TACLEANDO:    logica_tacleado()
+		Estado.BARRIDO:      logica_barrido(delta)
+		Estado.PARED:        logica_pared(dir)
+		Estado.CAIDA_BOMBA:  logica_caida_bomba(delta)
+		Estado.DIVE:         logica_dive()
 
 	move_and_slide()
+	verificar_inputs_especiales(dir, corre)
 
-	# GESTOR DE ANIMACIONES
-	actualizar_animacion(direccion, esta_barriendose, esta_en_pared)
-
-
-# --- FUNCIONES DE ACCIÓN ---
-
-func realizar_ataque():
-	esta_atacando = true
-	animaciones.play("Ataque")
-	await animaciones.animation_finished
-	esta_atacando = false
-	if animaciones.animation == "Ataque": animaciones.play("IDLE") 
-
-func realizar_tacleado():
-	esta_tacleando = true
-	animaciones.play("Tacleado")
-	
-	# Aseguramos la dirección visual al inicio del tacleado
-	# Si nos movemos, miramos a esa dirección; si no, mantenemos la actual.
-	var direccion_input = Input.get_axis("ui_left", "ui_right")
-	if direccion_input != 0:
-		animaciones.flip_h = (direccion_input < 0)
-	
-	await animaciones.animation_finished
-	
-	esta_tacleando = false
-	if animaciones.animation == "Tacleado": animaciones.play("IDLE")
-
-
-func actualizar_animacion(direccion, esta_barriendose, esta_en_pared):
-	# PRIORIDAD 1: BLOQUEO DE PARED
-	if bloqueo_por_pared:
-		if animaciones.animation != "Caminado": animaciones.play("Caminado")
-		return 
-
-	# PRIORIDAD 2: TACLEADO (¡Máxima prioridad visual!)
-	if esta_tacleando:
-		if animaciones.animation != "Tacleado": animaciones.play("Tacleado")
-		return
-
-	# PRIORIDAD 3: ATAQUE NORMAL
-	if esta_atacando:
-		if animaciones.animation != "Ataque": animaciones.play("Ataque")
-		if direccion != 0: animaciones.flip_h = (direccion < 0)
-		return
-
-	# PRIORIDAD 4: PARED (SLIDE)
-	if esta_en_pared and not is_on_floor() and velocity.y > 0:
-		if animaciones.animation != "IDLE": animaciones.play("IDLE") 
-		return
-
-	# PRIORIDAD 5: BARRIDO
-	if esta_barriendose:
-		if animaciones.animation != "Barrido": animaciones.play("Barrido")
-		if animaciones.frame >= 2:
-			animaciones.pause()
-			animaciones.frame = 2 
-		animaciones.flip_h = (direccion < 0)
-		return 
-
-	if animaciones.is_playing() == false:
-		animaciones.play() 
-
-	# PRIORIDAD 6: MOVIMIENTO NORMAL
-	if direccion != 0:
-		if animaciones.animation != "Caminado": animaciones.play("Caminado")
-		animaciones.flip_h = (direccion < 0)
-		if Input.is_action_pressed("Correr"):
-			animaciones.speed_scale = 1.5
+# #########################################################
+# 4. FUNCIONES DE APOYO
+# #########################################################
+func procesar_gravedad(delta: float) -> void:
+	if not is_on_floor() and estado_actual != Estado.PARED:
+		# No hay gravedad durante la anticipación de la bomba
+		if estado_actual == Estado.CAIDA_BOMBA and timer_bomba > 0:
+			velocity = Vector2.ZERO
 		else:
-			animaciones.speed_scale = 1.0
+			var mult_g = 0.7 if estado_actual == Estado.DIVE else 1.0
+			velocity.y += (GRAVEDAD * mult_g) * delta
+
+func actualizar_timers(delta: float) -> void:
+	if timer_super_salto > 0: timer_super_salto -= delta
+
+# #########################################################
+# 5. LÓGICA DE ESTADOS
+# #########################################################
+func logica_idle(dir: float) -> void:
+	timer_sprint = 0.0
+	velocity.x = move_toward(velocity.x, 0, VEL_NORMAL)
+	animaciones.play("IDLE")
+	
+	if dir != 0:
+		animaciones.flip_h = (dir < 0)
+		cambiar_estado(Estado.MOVIENDO)
+	if Input.is_action_just_pressed("saltar") and is_on_floor():
+		cambiar_estado(Estado.SALTANDO)
+
+func logica_movimiento(dir: float, corre: bool, delta: float) -> void:
+	var vel_final = VEL_NORMAL
+	
+	if corre:
+		if dir == ultima_dir_sprint: timer_sprint += delta
+		else: timer_sprint = 0.0; ultima_dir_sprint = dir
+		
+		vel_final = VEL_SUPER_CORRER if timer_sprint >= TIEMPO_SPRINT_MAX else VEL_CORRER
+		animaciones.speed_scale = 2.0 if vel_final == VEL_SUPER_CORRER else 1.5
 	else:
-		if animaciones.animation != "IDLE": animaciones.play("IDLE")
-		animaciones.speed_scale = 1.0
+		timer_sprint = 0.0; vel_final = VEL_NORMAL; animaciones.speed_scale = 1.0
+
+	velocity.x = dir * vel_final
+	animaciones.play("Caminado")
+	if dir != 0: animaciones.flip_h = (dir < 0)
+	
+	if dir == 0: cambiar_estado(Estado.IDLE)
+	elif Input.is_action_just_pressed("saltar"): cambiar_estado(Estado.SALTANDO)
+	elif not is_on_floor(): cambiar_estado(Estado.CAYENDO)
+
+func logica_aire(dir: float) -> void:
+	velocity.x = move_toward(velocity.x, dir * VEL_NORMAL, 10.0)
+	if dir != 0: animaciones.flip_h = (dir < 0)
+	
+	# Salto Variable
+	if not es_salto_potenciado and Input.is_action_just_released("saltar") and velocity.y < -50:
+		velocity.y *= MULT_CORTE_SALTO
+	
+	if is_on_floor():
+		es_salto_potenciado = false
+		cambiar_estado(Estado.IDLE if dir == 0 else Estado.MOVIENDO)
+	elif is_on_wall_only() and velocity.y > 0:
+		var n = get_wall_normal()
+		if (n.x < 0 and dir > 0) or (n.x > 0 and dir < 0): cambiar_estado(Estado.PARED)
+
+func logica_caida_bomba(delta: float) -> void:
+	if timer_bomba > 0:
+		timer_bomba -= delta
+		velocity = Vector2.ZERO
+		animaciones.play("Caida")
+	else:
+		velocity.x = 0
+		velocity.y = VEL_CAIDA_BOMBA
+		
+	if is_on_floor():
+		timer_super_salto = VENTANA_SALTO_POTENTE
+		cambiar_estado(Estado.IDLE)
+
+func logica_dive() -> void:
+	var dir_f = -1 if animaciones.flip_h else 1
+	var btn = "saltar" if not es_long_dive else "Correr"
+	
+	if not Input.is_action_pressed(btn):
+		cambiar_estado(Estado.CAYENDO)
+		return
+
+	velocity.x = dir_f * (DIVE_LONG_X if es_long_dive else DIVE_JUMP_X)
+	if is_on_floor(): cambiar_estado(Estado.IDLE)
+	elif is_on_wall(): cambiar_estado(Estado.PARED)
+
+func logica_barrido(delta: float) -> void:
+	velocity.x = -VEL_BARRIDO if animaciones.flip_h else VEL_BARRIDO
+	animaciones.play("Barrido")
+	if animaciones.frame >= 2: animaciones.pause()
+	timer_barrido -= delta
+	if timer_barrido <= 0: cambiar_estado(Estado.IDLE)
+
+func logica_pared(dir: float) -> void:
+	var n = get_wall_normal()
+	var pegado = (n.x < 0 and dir > 0) or (n.x > 0 and dir < 0)
+	
+	if not pegado or not is_on_wall() or is_on_floor():
+		cambiar_estado(Estado.CAYENDO)
+		return
+		
+	velocity.y = min(velocity.y, VEL_DESLIZAMIENTO)
+	animaciones.play("IDLE")
+	animaciones.flip_h = (n.x > 0)
+	
+	if Input.is_action_just_pressed("saltar"):
+		velocity.y = FUERZA_SALTO
+		velocity.x = n.x * REBOTE_PARED_X
+		cambiar_estado(Estado.SALTANDO)
+
+func logica_tacleado(): velocity.x = -VEL_TACLEADO if animaciones.flip_h else VEL_TACLEADO
+func logica_ataque():   velocity.x = move_toward(velocity.x, 0, 15.0)
+
+# #########################################################
+# 6. SISTEMA DE TRANSICIÓN
+# #########################################################
+func cambiar_estado(nuevo: Estado) -> void:
+	if estado_actual == nuevo: return
+	if estado_actual == Estado.BARRIDO: animaciones.play()
+	
+	estado_actual = nuevo
+	
+	match estado_actual:
+		Estado.CAIDA_BOMBA:
+			timer_bomba = PAUSA_ANTICIPACION
+			velocity = Vector2.ZERO
+			animaciones.play("Caida")
+		Estado.DIVE:
+			velocity.y = DIVE_LONG_Y if es_long_dive else DIVE_JUMP_Y
+			animaciones.play("Caida")
+		Estado.SALTANDO:
+			if timer_super_salto > 0:
+				velocity.y = FUERZA_SALTO_SUPER
+				es_salto_potenciado = true
+				timer_super_salto = 0
+			else:
+				velocity.y = FUERZA_SALTO
+				es_salto_potenciado = false
+		Estado.BARRIDO:  timer_barrido = DURACION_BARRIDO
+		Estado.ATACANDO: ejecutar_anim_combate("Ataque")
+		Estado.TACLEANDO: ejecutar_anim_combate("Tacleado")
+
+func ejecutar_anim_combate(anim: String) -> void:
+	animaciones.play(anim)
+	await animaciones.animation_finished
+	if estado_actual == Estado.ATACANDO or estado_actual == Estado.TACLEANDO:
+		cambiar_estado(Estado.IDLE)
+
+func verificar_inputs_especiales(dir: float, corre: bool) -> void:
+	# Dive (Solo desde Bomba)
+	if estado_actual == Estado.CAIDA_BOMBA and puedo_hacer_dive:
+		if Input.is_action_just_pressed("saltar"):
+			es_long_dive = false; puedo_hacer_dive = false; cambiar_estado(Estado.DIVE)
+			return
+		elif Input.is_action_just_pressed("Correr"):
+			es_long_dive = true; puedo_hacer_dive = false; cambiar_estado(Estado.DIVE)
+			return
+
+	# Ataque / Bomba / Tacleado
+	if Input.is_action_just_pressed("Ataque"):
+		if not is_on_floor() and estado_actual != Estado.CAIDA_BOMBA:
+			cambiar_estado(Estado.CAIDA_BOMBA)
+		elif is_on_floor():
+			cambiar_estado(Estado.TACLEANDO if corre else Estado.ATACANDO)
+			
+	# Barrido
+	if Input.is_action_just_pressed("ui_down") and corre and is_on_floor():
+		cambiar_estado(Estado.BARRIDO)
