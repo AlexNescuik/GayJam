@@ -2,6 +2,19 @@
 
 [ext_resource type="Script" uid="uid://u1nkjmjgk7pd" path="res://Escenas/player.gd" id="1_qgqwx"]
 [ext_resource type="Texture2D" uid="uid://bs83esemiggwv" path="res://Assets/Sprites/Luchador/luchador-idle-right.png" id="2_i3pqv"]
+[ext_resource type="Texture2D" uid="uid://cp2adr48kk7yh" path="res://Assets/Sprites/Luchador/luchador-death-right.png" id="2_qgqwx"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_xlwfv"]
+atlas = ExtResource("2_qgqwx")
+region = Rect2(56, 0, 28, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_7v5l4"]
+atlas = ExtResource("2_qgqwx")
+region = Rect2(84, 0, 28, 16)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_b21vg"]
+atlas = ExtResource("2_qgqwx")
+region = Rect2(112, 0, 28, 16)
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_two77"]
 load_path = "res://.godot/imported/luchador-walk-right.png-59d5ba20941ff30a5b88a7f5acd425cf.ctex"
@@ -40,6 +53,20 @@ region = Rect2(39, 0, 13, 16)
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_hqtel"]
 animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_xlwfv")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_7v5l4")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_b21vg")
+}],
+"loop": true,
+"name": &"Barrido",
+"speed": 5.0
+}, {
 "frames": [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_7vx30")
@@ -90,7 +117,9 @@ script = ExtResource("1_qgqwx")
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1048396481]
 position = Vector2(0, -8)
 sprite_frames = SubResource("SpriteFrames_hqtel")
-animation = &"Caminado"
+animation = &"Barrido"
+frame = 2
+frame_progress = 0.92763203
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1032946233]
 position = Vector2(-1, -7.5)
