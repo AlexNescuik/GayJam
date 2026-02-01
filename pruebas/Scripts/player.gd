@@ -31,7 +31,7 @@ const TIEMPO_BUFFER_SALTO = 0.1
 @export_group("Especiales")
 const VEL_CAIDA_BOMBA       = 600.0
 const VEL_DESLIZAMIENTO     = 50.0
-const REBOTE_PARED_X        = 300.0
+const REBOTE_PARED_X        = 180.0
 const TIEMPO_BLOQUEO_WALLJUMP = 0.25 
 const DIVE_JUMP_X           = 120.0
 const DIVE_JUMP_Y           = -180.0
@@ -96,11 +96,13 @@ func _physics_process(delta: float) -> void:
 		velocity.y += GRAVEDAD * delta
 		move_and_slide()
 		return
-
-	if estado_actual == Estado.HERIDO:
-		velocity.y += GRAVEDAD * delta
-		move_and_slide()
-		return
+		
+	if is_on_floor() and Input.is_action_just_pressed("ui_down"):
+		position.y += 2
+		if estado_actual == Estado.HERIDO:
+			velocity.y += GRAVEDAD * delta
+			move_and_slide()
+			return
 
 	leer_inputs()
 	actualizar_timers(delta)
@@ -172,7 +174,7 @@ func morir():
 	else:
 		animaciones.stop()
 	collision_mask = 0 
-	await get_tree().create_timer(3.0).timeout
+	await get_tree().create_timer(1.0).timeout
 	respawn()
 
 func respawn():
