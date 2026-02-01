@@ -3,7 +3,7 @@ extends CharacterBody2D
 # #########################################################
 # 1. ESTADOS Y CONFIGURACIÓN
 # #########################################################
-enum Estado { IDLE, MOVIENDO, SALTANDO, CAYENDO, ATACANDO, TACLEANDO, BARRIDO, PARED, CAIDA_BOMBA, DIVE }
+enum Estado { IDLE, MOVIENDO, SALTANDO, CAYENDO, ATACANDO, TACLEANDO, BARRIDO, PARED, CAIDA_BOMBA, DIVE, HERIDO, MUERTO }
 
 @export_group("Movimiento Horizontal")
 const VEL_NORMAL        = 100.0
@@ -40,10 +40,10 @@ const DIVE_LONG_Y           = -150.0
 const TIEMPO_SPRINT_MAX      = 1.2
 const PAUSA_ANTICIPACION     = 0.5
 const VENTANA_SALTO_POTENTE  = 0.2 
-const TIEMPO_MAX_BARRIDO	 = 0.9    
+const TIEMPO_MAX_BARRIDO = 0.9   
 
 @export_group("Combate y Vida")
-#eeen progreso   
+const FUERZA_RETROCESO_DAÑO = Vector2(200, -200) 
 
 # #########################################################
 # 2. VARIABLES DE CONTROL
@@ -62,9 +62,6 @@ var es_salto_potenciado: bool = false
 var es_long_dive       : bool = false
 var puedo_hacer_dive   : bool = true
 
-var tiempo_barrido_actual = 0.0   
-var bloqueo_barrido = false   
-
 var input_dir   : float = 0.0
 var input_corre : bool  = false
 
@@ -72,12 +69,27 @@ var vida_maxima : int = 3
 var vida_actual : int = 3
 var es_invulnerable : bool = false
 
+var tiempo_barrido_actual = 0.0   
+var bloqueo_barrido = false
+var recuperando_bomba : bool = false    
+
 @onready var animaciones = $AnimatedSprite2D
+@onready var hitbox_ataque = $HitboxAtaque/CollisionShape2D
 
 # #########################################################
 # 3. BUCLE PRINCIPAL
 # #########################################################
 func _physics_process(delta: float) -> void:
+	if estado_actual == Estado.MUERTO:
+		if not is_on_floor(): velocity.y += GRAVEDAD * delta
+		move_and_slide()
+		return
+
+	if estado_actual == Estado.HERIDO:
+		velocity.y += GRAVEDAD * delta
+		move_and_slide()
+		return
+
 	leer_inputs()
 	actualizar_timers(delta)
 	procesar_gravedad(delta)
@@ -87,9 +99,8 @@ func _physics_process(delta: float) -> void:
 		coyote_timer = TIEMPO_COYOTE
 		timer_wall_jump = 0 
 		
-		var intentando_barrer_teclas = Input.is_action_pressed("ui_down") and input_corre
-		
-		if not intentando_barrer_teclas and estado_actual != Estado.BARRIDO:
+		var teclas_barrido_presionadas = Input.is_action_pressed("ui_down") and input_corre
+		if estado_actual != Estado.BARRIDO and not teclas_barrido_presionadas:
 			bloqueo_barrido = false
 	
 	match estado_actual:
@@ -100,7 +111,7 @@ func _physics_process(delta: float) -> void:
 		Estado.ATACANDO, \
 		Estado.TACLEANDO:     pass 
 		Estado.BARRIDO:       logica_barrido(delta)
-		Estado.PARED:         logica_pared()
+		Estado.PARED:         logica_pared() 
 		Estado.CAIDA_BOMBA:   logica_caida_bomba(delta)
 		Estado.DIVE:          logica_dive()
 
@@ -108,14 +119,51 @@ func _physics_process(delta: float) -> void:
 	verificar_inputs_especiales()
 
 # #########################################################
-# 4. SISTEMA DE INPUTS Y TIMERS
+# 4. SISTEMA DE VIDA Y DAÑO
+# #########################################################
+func recibir_daño(cantidad: int, origen_daño_x: float):
+	if es_invulnerable or estado_actual == Estado.MUERTO: return
+	vida_actual -= cantidad
+	print("Auch! Vida restante: ", vida_actual)
+	
+	if vida_actual <= 0:
+		morir()
+	else:
+		estado_actual = Estado.HERIDO
+		
+		if animaciones.sprite_frames.has_animation("Herido"):
+			animaciones.play("Herido")
+		else:
+			animaciones.play("IDLE")
+			animaciones.modulate = Color.RED
+		
+		var dir_empuje = -1 if origen_daño_x > global_position.x else 1
+		velocity.x = dir_empuje * FUERZA_RETROCESO_DAÑO.x
+		velocity.y = FUERZA_RETROCESO_DAÑO.y
+
+		es_invulnerable = true
+		await get_tree().create_timer(0.5).timeout
+		es_invulnerable = false
+		
+		if vida_actual > 0:
+			estado_actual = Estado.IDLE
+			animaciones.modulate = Color.WHITE
+			
+func morir():
+	estado_actual = Estado.MUERTO
+	if animaciones.sprite_frames.has_animation("Muerte"):
+		animaciones.play("Muerte")
+	velocity = Vector2.ZERO
+
+# #########################################################
+# 5. SISTEMA DE INPUTS Y TIMERS
 # #########################################################
 func leer_inputs() -> void:
 	var raw_dir = Input.get_axis("ui_left", "ui_right")
 	input_dir = raw_dir if abs(raw_dir) > 0.15 else 0.0
 	input_corre = Input.is_action_pressed("Correr")
 	
-	if Input.is_action_just_pressed("saltar"):
+	if Input.is_action_just_pressed("Saltar"):
 		jump_buffer_timer = TIEMPO_BUFFER_SALTO
 
 func actualizar_timers(delta: float) -> void:
@@ -125,15 +173,18 @@ func actualizar_timers(delta: float) -> void:
 	if timer_wall_jump > 0:   timer_wall_jump -= delta
 
 # #########################################################
-# 5. GESTIÓN DE TRANSICIONES
+# 6. GESTIÓN DE TRANSICIONES
 # #########################################################
 func cambiar_estado(nuevo: Estado, forzar: bool = false) -> void:
 	if estado_actual == nuevo: return
 	
-	var es_accion = estado_actual in [Estado.ATACANDO, Estado.TACLEANDO, Estado.BARRIDO, Estado.DIVE, Estado.CAIDA_BOMBA]
+	var es_accion = estado_actual in [Estado.ATACANDO, Estado.TACLEANDO, Estado.BARRIDO, Estado.DIVE, Estado.CAIDA_BOMBA, Estado.HERIDO, Estado.MUERTO]
 	if es_accion and not forzar: return
 	
 	animaciones.speed_scale = 1.0
+
+	hitbox_ataque.disabled = true 
+	
 	if estado_actual == Estado.BARRIDO: animaciones.play() 
 	
 	estado_actual = nuevo
@@ -145,8 +196,10 @@ func cambiar_estado(nuevo: Estado, forzar: bool = false) -> void:
 			
 		Estado.CAIDA_BOMBA:
 			timer_bomba = PAUSA_ANTICIPACION
+			recuperando_bomba = false 
 			velocity = Vector2.ZERO
-			animaciones.play("Caida")
+			animaciones.play("Bomba") 
+			
 		Estado.DIVE:
 			velocity.y = DIVE_LONG_Y if es_long_dive else DIVE_JUMP_Y
 			animaciones.play("Caida")
@@ -157,15 +210,17 @@ func cambiar_estado(nuevo: Estado, forzar: bool = false) -> void:
 
 func iniciar_accion(anim: String) -> void:
 	animaciones.play(anim)
+	hitbox_ataque.disabled = false 
 	if not animaciones.animation_finished.is_connected(_on_anim_finished):
 		animaciones.animation_finished.connect(_on_anim_finished, CONNECT_ONE_SHOT)
 
 func _on_anim_finished():
+	hitbox_ataque.disabled = true 
 	if estado_actual in [Estado.ATACANDO, Estado.TACLEANDO]:
 		cambiar_estado(Estado.IDLE, true)
 
 # #########################################################
-# 6. LÓGICA DETALLADA DE ESTADOS
+# 7. LÓGICA DETALLADA DE ESTADOS
 # #########################################################
 func ejecutar_salto() -> void:
 	if timer_wall_jump > 0:
@@ -191,13 +246,16 @@ func ejecutar_salto() -> void:
 func verificar_inputs_especiales() -> void:
 	if timer_wall_jump > 0: return
 
-	if estado_actual == Estado.CAIDA_BOMBA and puedo_hacer_dive:
-		if jump_buffer_timer > 0:
-			es_long_dive = false; puedo_hacer_dive = false; cambiar_estado(Estado.DIVE, true)
-			return
-		elif Input.is_action_just_pressed("Correr"):
-			es_long_dive = true; puedo_hacer_dive = false; cambiar_estado(Estado.DIVE, true)
-			return
+	if estado_actual == Estado.CAIDA_BOMBA:
+		if recuperando_bomba: return
+		
+		if puedo_hacer_dive:
+			if jump_buffer_timer > 0:
+				es_long_dive = false; puedo_hacer_dive = false; cambiar_estado(Estado.DIVE, true)
+				return
+			elif Input.is_action_just_pressed("Correr"):
+				es_long_dive = true; puedo_hacer_dive = false; cambiar_estado(Estado.DIVE, true)
+				return
 
 	var es_libre = estado_actual in [Estado.IDLE, Estado.MOVIENDO, Estado.SALTANDO, Estado.CAYENDO]
 	if not es_libre: return
@@ -239,6 +297,7 @@ func logica_movimiento(delta: float) -> void:
 
 func logica_aire(delta: float) -> void:
 	if timer_wall_jump > 0:
+		animaciones.play("Saltar") 
 		animaciones.flip_h = (velocity.x < 0)
 	else:
 		if input_dir != 0:
@@ -246,8 +305,13 @@ func logica_aire(delta: float) -> void:
 			animaciones.flip_h = (input_dir < 0)
 		else:
 			velocity.x = move_toward(velocity.x, 0, FRICCION_AIRE * delta)
+		
+		if velocity.y < 0:
+			animaciones.play("Saltar")
+		else:
+			animaciones.play("Caida")
 	
-	if not es_salto_potenciado and Input.is_action_just_released("saltar") and velocity.y < -50:
+	if not es_salto_potenciado and Input.is_action_just_released("Saltar") and velocity.y < -50:
 		velocity.y *= MULT_CORTE_SALTO
 	
 	if is_on_floor():
@@ -279,13 +343,13 @@ func logica_barrido(delta: float) -> void:
 		animaciones.frame = 2
 	
 	tiempo_barrido_actual += delta
-
+	
 	if not (Input.is_action_pressed("ui_down") and input_corre):
 		cambiar_estado(Estado.MOVIENDO if input_dir != 0 else Estado.IDLE, true)
 		return
-
+	
 	if tiempo_barrido_actual >= TIEMPO_MAX_BARRIDO:
-		bloqueo_barrido = true # <--- Activamos el bloqueo aquí
+		bloqueo_barrido = true
 		cambiar_estado(Estado.MOVIENDO if input_dir != 0 else Estado.IDLE, true)
 		return
 		
@@ -301,7 +365,7 @@ func logica_pared():
 		return
 	
 	velocity.y = min(velocity.y, VEL_DESLIZAMIENTO)
-	animaciones.play("IDLE")
+	animaciones.play("Pared")
 	if n.x != 0: animaciones.flip_h = (n.x > 0)
 	
 	if jump_buffer_timer > 0:
@@ -311,18 +375,29 @@ func logica_pared():
 		cambiar_estado(Estado.SALTANDO, true)
 
 func logica_caida_bomba(delta: float) -> void:
+	if animaciones.animation == "Bomba" and animaciones.frame >= 3:
+		animaciones.pause()
+		animaciones.frame = 2
+
+	if recuperando_bomba:
+		velocity = Vector2.ZERO
+		return
+		
 	if timer_bomba > 0:
 		timer_bomba -= delta
 		velocity = Vector2.ZERO
-	else:
-		velocity.y = VEL_CAIDA_BOMBA
+		return
+	velocity.y = VEL_CAIDA_BOMBA
 	if is_on_floor():
+		recuperando_bomba = true		
+		await get_tree().create_timer(0.2).timeout
+		recuperando_bomba = false
 		timer_super_salto = VENTANA_SALTO_POTENTE
 		cambiar_estado(Estado.IDLE, true)
 
 func logica_dive() -> void:
 	var dir_f = -1 if animaciones.flip_h else 1
-	var btn_activo = input_corre if es_long_dive else Input.is_action_pressed("saltar")
+	var btn_activo = input_corre if es_long_dive else Input.is_action_pressed("Saltar")
 	
 	if not btn_activo:
 		cambiar_estado(Estado.CAYENDO, true)
