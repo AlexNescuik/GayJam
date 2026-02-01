@@ -6,8 +6,6 @@
 [ext_resource type="Texture2D" uid="uid://bqq0q2mf0vqh6" path="res://Assets/free-city-backgrounds-pixel-art/city 6/4.png" id="4_o1bi5"]
 [ext_resource type="Texture2D" uid="uid://bsm8apj2c0rtp" path="res://Assets/free-city-backgrounds-pixel-art/city 6/6.png" id="5_nlg82"]
 
-[sub_resource type="TileSet" id="TileSet_1e5m3"]
-
 [node name="Node2D" type="Node2D" unique_id=562857185]
 
 [node name="ParallaxBackground" type="ParallaxBackground" parent="." unique_id=468882931]
@@ -55,7 +53,3 @@ scale = Vector2(2.003472, 2.027778)
 texture = ExtResource("5_nlg82")
 
 [node name="TileMapLayer" type="TileMapLayer" parent="." unique_id=9497774]
-
-[node name="TileMap" type="TileMap" parent="TileMapLayer" unique_id=1657794142]
-tile_set = SubResource("TileSet_1e5m3")
-format = 2
