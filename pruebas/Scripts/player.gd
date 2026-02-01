@@ -40,10 +40,11 @@ const DIVE_LONG_Y           = -150.0
 const TIEMPO_SPRINT_MAX      = 1.2
 const PAUSA_ANTICIPACION     = 0.5
 const VENTANA_SALTO_POTENTE  = 0.2 
-const TIEMPO_MAX_BARRIDO = 0.9   
+const TIEMPO_MAX_BARRIDO = 0.3   
 
 @export_group("Combate y Vida")
 const FUERZA_RETROCESO_DAÑO = Vector2(200, -200) 
+@export var limite_caida_y : int = 200 
 
 # #########################################################
 # 2. VARIABLES DE CONTROL
@@ -73,15 +74,26 @@ var tiempo_barrido_actual = 0.0
 var bloqueo_barrido = false
 var recuperando_bomba : bool = false    
 
+var posicion_inicio : Vector2 
+var mask_original : int
+
 @onready var animaciones = $AnimatedSprite2D
 @onready var hitbox_ataque = $HitboxAtaque/CollisionShape2D
 
 # #########################################################
 # 3. BUCLE PRINCIPAL
 # #########################################################
+
+func _ready():
+	posicion_inicio = global_position
+	mask_original = collision_mask
+
 func _physics_process(delta: float) -> void:
+	if global_position.y > limite_caida_y and estado_actual != Estado.MUERTO:
+		morir()
+		
 	if estado_actual == Estado.MUERTO:
-		if not is_on_floor(): velocity.y += GRAVEDAD * delta
+		velocity.y += GRAVEDAD * delta
 		move_and_slide()
 		return
 
@@ -119,7 +131,7 @@ func _physics_process(delta: float) -> void:
 	verificar_inputs_especiales()
 
 # #########################################################
-# 4. SISTEMA DE VIDA Y DAÑO
+# 4. SISTEMA DE VIDA, DAÑO Y RESPAWN
 # #########################################################
 func recibir_daño(cantidad: int, origen_daño_x: float):
 	if es_invulnerable or estado_actual == Estado.MUERTO: return
@@ -150,15 +162,42 @@ func recibir_daño(cantidad: int, origen_daño_x: float):
 			animaciones.modulate = Color.WHITE
 			
 func morir():
+	if estado_actual == Estado.MUERTO: return
 	estado_actual = Estado.MUERTO
+	print("¡JUGADOR MUERTO!")
+	
+	velocity = Vector2.ZERO
 	if animaciones.sprite_frames.has_animation("Muerte"):
 		animaciones.play("Muerte")
+	else:
+		animaciones.stop()
+	collision_mask = 0 
+	await get_tree().create_timer(3.0).timeout
+	respawn()
+
+func respawn():
 	velocity = Vector2.ZERO
+	global_position = posicion_inicio
+	collision_mask = mask_original
+	
+	# 3. Restaurar Vida y Estado
+	vida_actual = vida_maxima
+	estado_actual = Estado.IDLE
+	animaciones.play("IDLE")
+	animaciones.modulate = Color.WHITE
+	es_invulnerable = false
+	
+	print("¡JUGADOR REVIVIDO!")
 
 # #########################################################
 # 5. SISTEMA DE INPUTS Y TIMERS
 # #########################################################
 func leer_inputs() -> void:
+	if estado_actual == Estado.MUERTO: 
+		input_dir = 0
+		input_corre = false
+		return
+
 	var raw_dir = Input.get_axis("ui_left", "ui_right")
 	input_dir = raw_dir if abs(raw_dir) > 0.15 else 0.0
 	input_corre = Input.is_action_pressed("Correr")
@@ -377,19 +416,21 @@ func logica_pared():
 func logica_caida_bomba(delta: float) -> void:
 	if animaciones.animation == "Bomba" and animaciones.frame >= 3:
 		animaciones.pause()
-		animaciones.frame = 2
+		animaciones.frame = 3
 
 	if recuperando_bomba:
 		velocity = Vector2.ZERO
 		return
-		
+
 	if timer_bomba > 0:
 		timer_bomba -= delta
 		velocity = Vector2.ZERO
 		return
+
 	velocity.y = VEL_CAIDA_BOMBA
+	
 	if is_on_floor():
-		recuperando_bomba = true		
+		recuperando_bomba = true
 		await get_tree().create_timer(0.2).timeout
 		recuperando_bomba = false
 		timer_super_salto = VENTANA_SALTO_POTENTE

@@ -5,11 +5,12 @@
 [ext_resource type="Texture2D" uid="uid://c7paga67l7qgv" path="res://Assets/Sprites/Nuevo Luchador/Barrido.png" id="3_ohiiw"]
 [ext_resource type="Texture2D" uid="uid://kxauqbmo2136" path="res://Assets/Sprites/Nuevo Luchador/caida bombaa.png" id="4_b21vg"]
 [ext_resource type="Texture2D" uid="uid://4klt12elw0pn" path="res://Assets/Sprites/Nuevo Luchador/caminandoing.png" id="4_cgfde"]
-[ext_resource type="Texture2D" uid="uid://dikk6m02tytlj" path="res://Assets/Sprites/Luchador/luchador-attack-right3.png" id="5_cgfde"]
-[ext_resource type="Texture2D" uid="uid://8or5xf2nw51t" path="res://Assets/Sprites/Luchador/luchador-hurt-right.png" id="5_xlwfv"]
 [ext_resource type="Texture2D" uid="uid://d0h0wj732v88a" path="res://Assets/Sprites/Nuevo Luchador/L_Salto.png" id="6_7v5l4"]
 [ext_resource type="Texture2D" uid="uid://bib3fqma7a1ej" path="res://Assets/Sprites/Nuevo Luchador/idle.png" id="7_knqkl"]
 [ext_resource type="Texture2D" uid="uid://dy8aqb8qhqdqq" path="res://Assets/Sprites/Nuevo Luchador/agarrarrr.png" id="7_ohiiw"]
+[ext_resource type="Texture2D" uid="uid://dudbrx0h85uel" path="res://Assets/Sprites/Nuevo Luchador/L_Muertez.png" id="7_ul4kv"]
+[ext_resource type="Texture2D" uid="uid://de6fqgeb656jy" path="res://Assets/Sprites/Nuevo Luchador/L_PeterGriffinPose.png" id="9_knqkl"]
+[ext_resource type="Texture2D" uid="uid://bwqujerg3qifl" path="res://Assets/Sprites/Nuevo Luchador/tacleo.png" id="11_ul4kv"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ohiiw"]
 atlas = ExtResource("2_xlwfv")
@@ -68,23 +69,15 @@ atlas = ExtResource("4_cgfde")
 region = Rect2(48, 0, 16, 20)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_n5uw0"]
-atlas = ExtResource("5_xlwfv")
-region = Rect2(0, 0, 15, 16)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_el7rh"]
-atlas = ExtResource("5_xlwfv")
-region = Rect2(15, 0, 15, 16)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_kwk6x"]
-atlas = ExtResource("5_xlwfv")
-region = Rect2(30, 0, 15, 16)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_n4wb5"]
-atlas = ExtResource("5_xlwfv")
-region = Rect2(45, 0, 15, 16)
+atlas = ExtResource("9_knqkl")
+region = Rect2(0, 0, 24, 20)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_ldnir"]
 atlas = ExtResource("4_cgfde")
+region = Rect2(0, 0, 16, 20)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_el7rh"]
+atlas = ExtResource("7_ul4kv")
 region = Rect2(0, 0, 16, 20)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_k1qdr"]
@@ -92,20 +85,16 @@ atlas = ExtResource("6_7v5l4")
 region = Rect2(16, 0, 16, 20)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_oba5i"]
-atlas = ExtResource("5_cgfde")
-region = Rect2(0, 0, 21, 19)
+atlas = ExtResource("11_ul4kv")
+region = Rect2(0, 0, 16, 20)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_y717v"]
-atlas = ExtResource("5_cgfde")
-region = Rect2(21, 0, 21, 19)
+atlas = ExtResource("11_ul4kv")
+region = Rect2(16, 0, 16, 20)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_vwnoe"]
-atlas = ExtResource("5_cgfde")
-region = Rect2(42, 0, 21, 19)
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_r84g6"]
-atlas = ExtResource("5_cgfde")
-region = Rect2(63, 0, 21, 19)
+atlas = ExtResource("11_ul4kv")
+region = Rect2(32, 0, 16, 20)
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_hqtel"]
 animations = [{
@@ -179,15 +168,6 @@ animations = [{
 "frames": [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_n5uw0")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_el7rh")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_kwk6x")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_n4wb5")
 }],
 "loop": false,
 "name": &"Herido",
@@ -203,6 +183,14 @@ animations = [{
 "loop": true,
 "name": &"IDLE",
 "speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_el7rh")
+}],
+"loop": true,
+"name": &"Muerte",
+"speed": 5.0
 }, {
 "frames": [{
 "duration": 1.0,
@@ -229,9 +217,6 @@ animations = [{
 }, {
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_vwnoe")
-}, {
-"duration": 1.0,
-"texture": SubResource("AtlasTexture_r84g6")
 }],
 "loop": false,
 "name": &"Tacleado",
@@ -240,44 +225,42 @@ animations = [{
 
 [sub_resource type="CapsuleShape2D" id="CapsuleShape2D_qgqwx"]
 radius = 5.0
-height = 15.0
+height = 18.0
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ul4kv"]
+size = Vector2(10, 16)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_xlwfv"]
 size = Vector2(9, 16.5)
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_cgfde"]
-size = Vector2(16, 20)
 
 [node name="Player" type="CharacterBody2D" unique_id=1066533691]
 collision_layer = 2
 script = ExtResource("1_qgqwx")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="." unique_id=1048396481]
-position = Vector2(0, -8)
+position = Vector2(-1, -9.25)
+scale = Vector2(0.875, 0.875)
 sprite_frames = SubResource("SpriteFrames_hqtel")
-animation = &"Bomba"
+animation = &"Caminado"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1032946233]
-position = Vector2(-1, -7.5)
+position = Vector2(-1, -9)
 shape = SubResource("CapsuleShape2D_qgqwx")
 debug_color = Color(1.92523e-06, 0.6512661, 0.055385932, 0.41960785)
+
+[node name="HitboxAtaque" type="Area2D" parent="." unique_id=1803091536]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="HitboxAtaque" unique_id=1129082636]
+position = Vector2(-1, -9)
+shape = SubResource("RectangleShape2D_ul4kv")
+disabled = true
 
 [node name="HurtboxJugador" type="Area2D" parent="." unique_id=1981073962]
 collision_layer = 2
 collision_mask = 0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="HurtboxJugador" unique_id=1991530863]
-position = Vector2(-1, -8.25)
+position = Vector2(-1, -9)
 shape = SubResource("RectangleShape2D_xlwfv")
 disabled = true
 debug_color = Color(0.65882355, 0.5176471, 0, 0.5372549)
-
-[node name="HitboxAtaque" type="Area2D" parent="." unique_id=571011818]
-collision_layer = 0
-collision_mask = 4
-
-[node name="CollisionShape2D" type="CollisionShape2D" parent="HitboxAtaque" unique_id=728117487]
-position = Vector2(-2, -8)
-shape = SubResource("RectangleShape2D_cgfde")
-disabled = true
-debug_color = Color(18.540012, 0, 0, 0.5176471)

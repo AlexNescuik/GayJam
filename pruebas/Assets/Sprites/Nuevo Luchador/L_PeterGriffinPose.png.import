@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ddk7lkwps2cir"
-path="res://.godot/imported/luchador-attack-right.png-7e9d81ab6f7a81677d7781453389e7be.ctex"
+uid="uid://de6fqgeb656jy"
+path="res://.godot/imported/L_PeterGriffinPose.png-ddac3f26b28bfd12a3cd31f6455adb45.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Sprites/Luchador/luchador-attack-right.png"
-dest_files=["res://.godot/imported/luchador-attack-right.png-7e9d81ab6f7a81677d7781453389e7be.ctex"]
+source_file="res://Assets/Sprites/Nuevo Luchador/L_PeterGriffinPose.png"
+dest_files=["res://.godot/imported/L_PeterGriffinPose.png-ddac3f26b28bfd12a3cd31f6455adb45.ctex"]
 
 [params]
 

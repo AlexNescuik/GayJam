@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://1l1mv1744uua"
-path="res://.godot/imported/luchador-walk-down.png-818ffc807cad3888fa775152641bcf1d.ctex"
+uid="uid://dudbrx0h85uel"
+path="res://.godot/imported/L_Muertez.png-25762e3f11128f52ed1a8d61ebda179f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Sprites/Luchador/luchador-walk-down.png"
-dest_files=["res://.godot/imported/luchador-walk-down.png-818ffc807cad3888fa775152641bcf1d.ctex"]
+source_file="res://Assets/Sprites/Nuevo Luchador/L_Muertez.png"
+dest_files=["res://.godot/imported/L_Muertez.png-25762e3f11128f52ed1a8d61ebda179f.ctex"]
 
 [params]
 

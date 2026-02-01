@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b5bj00uaut1y5"
-path="res://.godot/imported/luchador-walk-up-right.png-b1eea787fa775e95cb87e222615d498a.ctex"
+uid="uid://bwqujerg3qifl"
+path="res://.godot/imported/tacleo.png-52867325d6fdb0733219d76f0cc732f2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://Assets/Sprites/Luchador/luchador-walk-up-right.png"
-dest_files=["res://.godot/imported/luchador-walk-up-right.png-b1eea787fa775e95cb87e222615d498a.ctex"]
+source_file="res://Assets/Sprites/Nuevo Luchador/tacleo.png"
+dest_files=["res://.godot/imported/tacleo.png-52867325d6fdb0733219d76f0cc732f2.ctex"]
 
 [params]
 
