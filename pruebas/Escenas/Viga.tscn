@@ -1,0 +1,18 @@
+[gd_scene format=3 uid="uid://cqe22cu3oso23"]
+
+[ext_resource type="Script" uid="uid://7n0fbuylpqha" path="res://Scripts/viga.gd" id="1_iq5f8"]
+[ext_resource type="Texture2D" uid="uid://1qmgjcbr2tgw" path="res://Sprites/viga.png" id="1_ogw0g"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_iq5f8"]
+size = Vector2(11, 48)
+
+[node name="StaticBody2D" type="StaticBody2D" unique_id=1177310494 groups=["rompible"]]
+script = ExtResource("1_iq5f8")
+
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=612961721]
+position = Vector2(16, 35)
+texture = ExtResource("1_ogw0g")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=587641321]
+position = Vector2(12, -5)
+shape = SubResource("RectangleShape2D_iq5f8")

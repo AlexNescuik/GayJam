@@ -1,4 +1,6 @@
 extends CharacterBody2D
+signal cambio_vida(nueva_vida)
+signal juego_terminado
 
 # #########################################################
 # 1. ESTADOS Y CONFIGURACIÓN
@@ -76,6 +78,7 @@ var recuperando_bomba : bool = false
 
 var posicion_inicio : Vector2 
 var mask_original : int
+var esperando_reinicio : bool = false # Variable nueva
 
 @onready var animaciones = $AnimatedSprite2D
 @onready var hitbox_ataque = $HitboxAtaque/CollisionShape2D
@@ -87,8 +90,15 @@ var mask_original : int
 func _ready():
 	posicion_inicio = global_position
 	mask_original = collision_mask
+	await get_tree().process_frame
+	cambio_vida.emit(vida_actual)
 
 func _physics_process(delta: float) -> void:
+	if esperando_reinicio:
+		if Input.is_key_pressed(KEY_Z):
+			get_tree().reload_current_scene()
+		return  
+	
 	if global_position.y > limite_caida_y and estado_actual != Estado.MUERTO:
 		morir()
 		
@@ -137,7 +147,9 @@ func _physics_process(delta: float) -> void:
 # #########################################################
 func recibir_daño(cantidad: int, origen_daño_x: float):
 	if es_invulnerable or estado_actual == Estado.MUERTO: return
+	
 	vida_actual -= cantidad
+	cambio_vida.emit(vida_actual)
 	print("Auch! Vida restante: ", vida_actual)
 	
 	if vida_actual <= 0:
@@ -168,28 +180,39 @@ func morir():
 	estado_actual = Estado.MUERTO
 	print("¡JUGADOR MUERTO!")
 	
+	vida_actual -= 1
+	cambio_vida.emit(vida_actual)
+	print("Vidas restantes: ", vida_actual)
+	
 	velocity = Vector2.ZERO
 	if animaciones.sprite_frames.has_animation("Muerte"):
 		animaciones.play("Muerte")
 	else:
 		animaciones.stop()
+	
 	collision_mask = 0 
 	await get_tree().create_timer(1.0).timeout
-	respawn()
+	if vida_actual > 0:
+		respawn()
+	else:
+		game_over_total()
 
 func respawn():
 	velocity = Vector2.ZERO
 	global_position = posicion_inicio
 	collision_mask = mask_original
 	
-	# 3. Restaurar Vida y Estado
-	vida_actual = vida_maxima
 	estado_actual = Estado.IDLE
 	animaciones.play("IDLE")
 	animaciones.modulate = Color.WHITE
 	es_invulnerable = false
 	
 	print("¡JUGADOR REVIVIDO!")
+
+func game_over_total():
+	print("GAME OVER - MOSTRANDO PANTALLA")
+	juego_terminado.emit()
+	esperando_reinicio = true
 
 # #########################################################
 # 5. SISTEMA DE INPUTS Y TIMERS
@@ -458,3 +481,12 @@ func procesar_gravedad(delta):
 		else: 
 			var mult = 0.7 if estado_actual == Estado.DIVE else 1.0
 			velocity.y += (GRAVEDAD * mult) * delta
+
+func _on_hitbox_ataque_body_entered(body):
+	if body.is_in_group("rompible"):
+		if estado_actual == Estado.ATACANDO or estado_actual == Estado.BARRIDO or estado_actual == Estado.CAIDA_BOMBA:
+			print("¡Rompiendo viga!")
+			if body.has_method("romper"):
+				body.romper()
+			else:
+				body.queue_free()
