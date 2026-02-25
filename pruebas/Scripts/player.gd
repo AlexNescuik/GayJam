@@ -27,13 +27,13 @@ const VEL_GROUND_POUND      = 600.0
 const VEL_DESLIZAMIENTO     = 50.0
 const REBOTE_PARED_X        = 180.0
 const TIEMPO_BLOQUEO_WALLJUMP = 0.25 
-# --- NUEVAS CONSTANTES DIVE FALL GUYS ---
-const VEL_DIVE_X            = 350.0 # Impulso fuerte hacia adelante
-const VEL_DIVE_Y            = -200.0 # Pequeño empujón hacia arriba para el arco
+
+const VEL_DIVE_X            = 350.0 
+const VEL_DIVE_Y            = -200.0 
 const PAUSA_ANTICIPACION     = 0.3 
 const VENTANA_SALTO_POTENTE  = 0.2 
 const TIEMPO_MAX_DASH        = 0.3 
-const TIEMPO_MAX_ROLL        = 1.0 
+const TIEMPO_MAX_ROLL        = 0.5 
 
 @export_group("Combate y Vida")
 const FUERZA_RETROCESO_DAÑO = Vector2(200, -200) 
@@ -55,7 +55,7 @@ var tiempo_roll_actual = 0.0
 
 # Banderas de estado
 var es_salto_potenciado: bool = false
-var puedo_hacer_dive   : bool = true # Se recarga al tocar el piso
+var puedo_hacer_dive   : bool = true 
 var bloqueo_dash       = false 
 var recuperando_gp     : bool = false    
 var esperando_reinicio : bool = false 
@@ -110,7 +110,7 @@ func _physics_process(delta: float) -> void:
 	procesar_gravedad(delta)
 	
 	if is_on_floor():
-		puedo_hacer_dive = true # ¡Se recarga el Dive!
+		puedo_hacer_dive = true 
 		coyote_timer = TIEMPO_COYOTE
 		timer_wall_jump = 0 
 		
@@ -160,7 +160,6 @@ func procesar_gravedad(delta):
 		if estado_actual == Estado.GROUND_POUND: 
 			return
 		else: 
-			# Gravedad un poco más flotante para el Dive y saltos normales
 			var mult = 0.7 if estado_actual == Estado.DIVE else 1.0
 			velocity.y += (GRAVEDAD * mult) * delta
 
@@ -184,13 +183,13 @@ func cambiar_estado(nuevo: Estado, forzar: bool = false) -> void:
 	match estado_actual:
 		Estado.ROLL:
 			tiempo_roll_actual = 0.0
-			dir_accion = -1 if animaciones.flip_h else 1
+			if input_dir != 0: animaciones.flip_h = (input_dir < 0) # Voltea de inmediato
 			es_invulnerable = true
 			collision_mask = 1 
 			animaciones.play("Tacleado") 
 		Estado.DASH:
 			tiempo_dash_actual = 0.0
-			dir_accion = -1 if animaciones.flip_h else 1
+			if input_dir != 0: animaciones.flip_h = (input_dir < 0) # Voltea de inmediato
 			hitbox_ataque.disabled = false 
 			animaciones.play("Barrido") 
 		Estado.GROUND_POUND:
@@ -202,7 +201,7 @@ func cambiar_estado(nuevo: Estado, forzar: bool = false) -> void:
 			dir_accion = -1 if animaciones.flip_h else 1
 			velocity.x = dir_accion * VEL_DIVE_X
 			velocity.y = VEL_DIVE_Y
-			animaciones.play("Caida") # Si tienes una animación de "Zambullida", ponla aquí
+			animaciones.play("Caida")
 		Estado.SALTANDO:
 			ejecutar_salto()
 		Estado.ATACANDO:  
@@ -214,7 +213,6 @@ func verificar_inputs_especiales() -> void:
 	if estado_actual == Estado.GROUND_POUND:
 		if recuperando_gp: return
 		
-		# Cancelar el Ground Pound transformándolo en un DIVE
 		if puedo_hacer_dive and (Input.is_action_just_pressed("Saltar") or Input.is_action_just_pressed("Correr")):
 			hitbox_ataque.disabled = true
 			puedo_hacer_dive = false
@@ -308,17 +306,41 @@ func logica_aire(delta: float) -> void:
 			cambiar_estado(Estado.PARED, true)
 
 func logica_roll(delta: float) -> void:
-	velocity.x = dir_accion * VEL_ROLL
+	if input_dir != 0:
+		velocity.x = input_dir * VEL_ROLL
+		animaciones.flip_h = (input_dir < 0)
+	else:
+		var dir_actual = -1 if animaciones.flip_h else 1
+		velocity.x = dir_actual * VEL_ROLL
+
 	tiempo_roll_actual += delta
 	
-	if tiempo_roll_actual >= TIEMPO_MAX_ROLL:
-		es_invulnerable = false
-		collision_mask = mask_original 
-		cambiar_estado(Estado.IDLE, true)
+	if not input_corre:
+		terminar_roll()
+		return
+	
+	if tiempo_roll_actual >= TIEMPO_MAX_ROLL or is_on_wall():
+		terminar_roll()
+
+func terminar_roll() -> void:
+	es_invulnerable = false
+	collision_mask = mask_original 
+	cambiar_estado(Estado.MOVIENDO if input_dir != 0 else Estado.IDLE, true)
 
 func logica_dash(delta: float) -> void:
-	velocity.x = dir_accion * VEL_DASH
+	if input_dir != 0:
+		velocity.x = input_dir * VEL_DASH
+		animaciones.flip_h = (input_dir < 0)
+	else:
+		var dir_actual = -1 if animaciones.flip_h else 1
+		velocity.x = dir_actual * VEL_DASH
+
 	tiempo_dash_actual += delta
+	
+	# Cancelación manual si sueltas Abajo o Correr
+	if not (Input.is_action_pressed("ui_down") and input_corre):
+		terminar_dash()
+		return
 	
 	if tiempo_dash_actual >= TIEMPO_MAX_DASH or is_on_wall():
 		terminar_dash()
@@ -326,7 +348,7 @@ func logica_dash(delta: float) -> void:
 func terminar_dash() -> void:
 	hitbox_ataque.disabled = true
 	bloqueo_dash = true
-	cambiar_estado(Estado.IDLE, true)
+	cambiar_estado(Estado.MOVIENDO if input_dir != 0 else Estado.IDLE, true)
 
 func logica_pared():
 	var n = get_wall_normal()
@@ -373,12 +395,9 @@ func logica_ground_pound(delta: float) -> void:
 		cambiar_estado(Estado.IDLE, true)
 
 func logica_dive() -> void:
-	# Mantiene la inercia del inicio del salto parabólico
-	# La gravedad se encarga del eje Y
 	if is_on_floor(): 
 		cambiar_estado(Estado.IDLE, true)
 	elif is_on_wall():
-		# Pequeño rebote al chocar con pared
 		velocity.x = -dir_accion * 50
 		cambiar_estado(Estado.CAYENDO, true)
 

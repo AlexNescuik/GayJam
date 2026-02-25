@@ -26,6 +26,7 @@ folder_colors={
 "res://Assets/Fondos Parallax/": "purple",
 "res://Assets/Fondos Parallax/free-city-backgrounds-pixel-art/": "blue",
 "res://Assets/Sprites/": "purple",
+"res://Assets/Sprites/Enemigos/": "blue",
 "res://Assets/Sprites/Interactuables/": "blue",
 "res://Assets/Sprites/Relámpago jr/": "blue",
 "res://Assets/Sprites/TileSet comprado/": "blue",
@@ -38,6 +39,10 @@ folder_colors={
 "res://UI/": "pink",
 "res://UI/HUD/": "purple"
 }
+
+[global_group]
+
+enemigo=""
 
 [input]
 

@@ -228,10 +228,10 @@ radius = 5.0
 height = 18.0
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ul4kv"]
-size = Vector2(10, 16)
+size = Vector2(16, 16)
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_xlwfv"]
-size = Vector2(9, 16.5)
+size = Vector2(12, 16.5)
 
 [node name="Player" type="CharacterBody2D" unique_id=1066533691]
 collision_layer = 2
@@ -249,6 +249,7 @@ shape = SubResource("CapsuleShape2D_qgqwx")
 debug_color = Color(1.92523e-06, 0.6512661, 0.055385932, 0.41960785)
 
 [node name="HitboxAtaque" type="Area2D" parent="." unique_id=1803091536]
+collision_layer = 3
 collision_mask = 7
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="HitboxAtaque" unique_id=1129082636]
@@ -257,11 +258,12 @@ shape = SubResource("RectangleShape2D_ul4kv")
 disabled = true
 
 [node name="HurtboxJugador" type="Area2D" parent="." unique_id=1981073962]
-collision_layer = 2
-collision_mask = 0
+position = Vector2(1, 0)
+collision_layer = 3
+collision_mask = 3
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="HurtboxJugador" unique_id=1991530863]
-position = Vector2(-1, -9)
+position = Vector2(-2, -9)
 shape = SubResource("RectangleShape2D_xlwfv")
 disabled = true
 debug_color = Color(0.65882355, 0.5176471, 0, 0.5372549)

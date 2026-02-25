@@ -6,12 +6,12 @@
 [ext_resource type="Texture2D" uid="uid://bfttg25marjtu" path="res://Assets/TileMaps/pixil-frame-0 (3).png" id="9_e27ky"]
 [ext_resource type="Texture2D" uid="uid://lsvs3ohren5f" path="res://Assets/Sprites/TileSet comprado/mp_cs_doors_windows.png" id="10_eakaq"]
 [ext_resource type="Texture2D" uid="uid://cgjh1re0t1sj2" path="res://Assets/Sprites/TileSet comprado/mp_cs_props.png" id="11_1vdx2"]
+[ext_resource type="PackedScene" uid="uid://456s3m7fpe8j" path="res://Escenas/Dummy.tscn" id="12_5dxfl"]
 [ext_resource type="Texture2D" uid="uid://cqwegr1xsalyv" path="res://Assets/Sprites/TileSet comprado/mp_cs_shadows.png" id="12_20j7a"]
 [ext_resource type="Texture2D" uid="uid://blupeiqmm2cuk" path="res://Assets/Sprites/TileSet comprado/mp_cs_tilemap_all.png" id="13_c7hc7"]
 [ext_resource type="Texture2D" uid="uid://b8cgaucaol6b" path="res://Assets/Sprites/TileSet comprado/mp_cs_vegetation.png" id="14_mjk2r"]
 [ext_resource type="PackedScene" uid="uid://dvxqf23yd7wl6" path="res://UI/HUD/HUD.tscn" id="15_xpwt8"]
 [ext_resource type="Texture2D" uid="uid://bsschv2ebde57" path="res://UI/HUD/Corazon Vacio.png" id="16_fxhto"]
-[ext_resource type="PackedScene" uid="uid://cqe22cu3oso23" path="res://Escenas/Viga.tscn" id="17_hunyr"]
 
 [sub_resource type="CompressedTexture2D" id="CompressedTexture2D_5dxfl"]
 load_path = "res://.godot/imported/1.png-99ab4efd915ba79e311a373cef60a166.ctex"
@@ -2910,6 +2910,7 @@ position = Vector2(110.99995, -57)
 zoom = Vector2(3.5, 3.5)
 
 [node name="ParallaxBackground" type="ParallaxBackground" parent="." unique_id=324834716]
+visible = false
 
 [node name="ParallaxLayer" type="ParallaxLayer" parent="ParallaxBackground" unique_id=399541089]
 position = Vector2(6, -697)
@@ -2977,8 +2978,8 @@ metadata/_edit_group_ = true
 [node name="HUD" parent="." unique_id=1334365147 instance=ExtResource("15_xpwt8")]
 corazon_vacio = ExtResource("16_fxhto")
 
-[node name="StaticBody2D" parent="." unique_id=1177310494 instance=ExtResource("17_hunyr")]
-position = Vector2(59, 589)
+[node name="Dummy" parent="." unique_id=319906661 instance=ExtResource("12_5dxfl")]
+position = Vector2(87, 608)
 
 [connection signal="cambio_vida" from="Player" to="HUD" method="actualizar_vidas"]
 [connection signal="juego_terminado" from="Player" to="HUD" method="activar_game_over"]
