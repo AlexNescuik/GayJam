@@ -33,7 +33,7 @@ func disparar():
 		nueva_bala.global_position = global_position
 		
 		# ==========================================
-		# ¡EL CÁLCULO DE APUNTADO!
+		# APUNTADO
 		# ==========================================
 		if jugador_referencia:
 			var direccion_apuntado = (jugador_referencia.global_position - global_position).normalized()

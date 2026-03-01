@@ -1,7 +1,8 @@
 [gd_scene format=3 uid="uid://lxcme571bw5x"]
 
-[ext_resource type="Script" uid="uid://qcka7fyv56fy" path="res://Scripts/dummy.gd" id="1_4lgdf"]
+[ext_resource type="Script" uid="uid://csg2hgr4cddad" path="res://Scripts/EneProyec.gd" id="1_4lgdf"]
 [ext_resource type="Texture2D" uid="uid://bt6ugj6k375vj" path="res://Assets/Sprites/Enemigos/MonoProyectil.png" id="2_4lgdf"]
+[ext_resource type="PackedScene" uid="uid://ly2bddmd8sv2" path="res://Escenas/bala.tscn" id="2_caimr"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_suh7a"]
 size = Vector2(13, 13)
@@ -12,6 +13,7 @@ size = Vector2(20, 18)
 [node name="EneProyec" type="CharacterBody2D" unique_id=319906661 groups=["enemigo"]]
 collision_layer = 4
 script = ExtResource("1_4lgdf")
+escena_bala = ExtResource("2_caimr")
 
 [node name="Sprite2D" type="Sprite2D" parent="." unique_id=1254813886]
 position = Vector2(11, -10)
